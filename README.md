@@ -26,3 +26,6 @@ Before launch, choose a payment provider and decide plans/prices, refund rules, 
 - This starter does not place trades or directly connect to MT5.
 - Keep trading disabled until a secure backend/MT5 bridge, server-enforced risk limits, and demo testing are complete.
 - Never commit Supabase service-role keys, database passwords, broker credentials, MT5 passwords, or payment-provider secrets.
+
+## Launcher icon resources
+Android launcher icon PNGs belong under `app/src/main/res/mipmap-mdpi/`, `mipmap-hdpi/`, `mipmap-xhdpi/`, `mipmap-xxhdpi/`, and `mipmap-xxxhdpi/`. The manifest references `@mipmap/ic_launcher`.
