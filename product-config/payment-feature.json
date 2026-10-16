@@ -1,1 +1,7 @@
-
+{
+  "enabled": false,
+  "mode": "inactive",
+  "checkoutEnabled": false,
+  "paidFeaturesEnabled": false,
+  "note": "Payment feature intentionally disabled until the product is ready for launch."
+}
