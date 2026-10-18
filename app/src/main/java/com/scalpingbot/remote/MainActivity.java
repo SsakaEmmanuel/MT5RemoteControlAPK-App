@@ -19,12 +19,23 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.view.Gravity;
 import android.graphics.Color;
+import android.app.AlertDialog;
+import android.net.Uri;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private ProgressBar progressBar;
     private static final String HOME_URL = "https://ssakaemmanuel.github.io/ScalpingBot/";
     private static final String SITE_BASE = "https://ssakaemmanuel.github.io/ScalpingBot/";
+    private static final String CURRENT_VERSION = "1.2";
+    private static final String RELEASES_API = "https://api.github.com/repos/SsakaEmmanuel/MT5RemoteControlAPK-App/releases/latest";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,6 +137,94 @@ public class MainActivity extends Activity {
         });
         if (savedInstanceState != null) webView.restoreState(savedInstanceState);
         else webView.loadUrl(HOME_URL);
+
+        // Check published GitHub Releases in the background; never block app startup.
+        checkForAppUpdate();
+    }
+
+    private void checkForAppUpdate() {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(RELEASES_API);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(6000);
+                connection.setReadTimeout(6000);
+                connection.setRequestProperty("Accept", "application/vnd.github+json");
+                connection.setRequestProperty("User-Agent", "ScalpingBot-Android");
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) return;
+
+                StringBuilder response = new StringBuilder();
+                try (InputStream input = connection.getInputStream();
+                     BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) response.append(line);
+                }
+
+                JSONObject release = new JSONObject(response.toString());
+                if (release.optBoolean("draft", false) || release.optBoolean("prerelease", false)) return;
+                String tag = release.optString("tag_name", "").replaceFirst("^[vV]", "").trim();
+                if (tag.isEmpty() || !isNewerVersion(tag, CURRENT_VERSION)) return;
+
+                JSONArray assets = release.optJSONArray("assets");
+                if (assets == null) return;
+                String apkUrl = null;
+                for (int i = 0; i < assets.length(); i++) {
+                    JSONObject asset = assets.optJSONObject(i);
+                    if (asset == null) continue;
+                    String name = asset.optString("name", "");
+                    String download = asset.optString("browser_download_url", "");
+                    if (name.toLowerCase(java.util.Locale.ROOT).endsWith(".apk")
+                            && download.startsWith("https://")) {
+                        apkUrl = download;
+                        break;
+                    }
+                }
+                if (apkUrl == null) return;
+
+                final String latestVersion = tag;
+                final String downloadUrl = apkUrl;
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("ScalpingBot update available")
+                        .setMessage("Version " + latestVersion + " is available. Update now to get the latest improvements?")
+                        .setCancelable(true)
+                        .setNegativeButton("Later", (dialog, which) -> dialog.dismiss())
+                        .setPositiveButton("Update now", (dialog, which) -> {
+                            try {
+                                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)));
+                            } catch (Exception ignored) {
+                                new AlertDialog.Builder(MainActivity.this)
+                                    .setMessage("Could not open the download. Please try again later.")
+                                    .setPositiveButton("OK", null)
+                                    .show();
+                            }
+                        })
+                        .show();
+                });
+            } catch (Exception ignored) {
+                // Update checks are optional; offline users can keep using the app.
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private boolean isNewerVersion(String latest, String current) {
+        try {
+            String[] latestParts = latest.split("\\.");
+            String[] currentParts = current.split("\\.");
+            int count = Math.max(latestParts.length, currentParts.length);
+            for (int i = 0; i < count; i++) {
+                int a = i < latestParts.length ? Integer.parseInt(latestParts[i].replaceAll("[^0-9].*$", "")) : 0;
+                int b = i < currentParts.length ? Integer.parseInt(currentParts[i].replaceAll("[^0-9].*$", "")) : 0;
+                if (a > b) return true;
+                if (a < b) return false;
+            }
+        } catch (Exception ignored) { }
+        return false;
     }
     private int dp(int value) { return (int)(value * getResources().getDisplayMetrics().density + 0.5f); }
     @Override public void onBackPressed() {
