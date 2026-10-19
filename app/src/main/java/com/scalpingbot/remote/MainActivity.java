@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
-        progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.rgb(77, 205, 160)));
+        progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.rgb(255, 210, 31)));
 
         // Reserve space for native navigation so it remains visible even when
         // the website's responsive navigation is hidden inside the WebView.
@@ -130,7 +130,7 @@ public class MainActivity extends Activity {
                         "<html><meta name='viewport' content='width=device-width, initial-scale=1'>"
                         + "<body style='background:#0c101b;color:#f5f7fb;font-family:sans-serif;padding:24px'>"
                         + "<h2>Connection problem</h2><p>ScalpingBot could not load. Check internet and try again.</p>"
-                        + "<p><a style='color:#4dcda0' href='" + HOME_URL + "'>Retry</a></p></body></html>",
+                        + "<p><a style='color:#ffd21f' href='" + HOME_URL + "'>Retry</a></p></body></html>",
                         "text/html", "UTF-8", null);
                 }
             }
